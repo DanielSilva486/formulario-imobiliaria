@@ -2,55 +2,51 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Cadastro de Cliente - Imobiliária</title>
+  <title>Teste de Formulário</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       text-align: center;
       padding: 40px;
-      background-color: #f5f5f5;
     }
 
-    h1 {
-      color: #333;
-    }
-
-    #formCadastro {
+    form {
       display: none;
       flex-direction: column;
       gap: 10px;
-      width: 320px;
-      margin: 20px auto;
+      width: 300px;
+      margin: auto;
       padding: 20px;
-      background-color: #fff;
+      background-color: #f0f0f0;
       border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     }
 
     input, button {
       padding: 10px;
       font-size: 16px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      width: 100%;
-    }
-
-    button {
-      background-color: #28a745;
-      color: white;
-      border: none;
-    }
-
-    button:hover {
-      background-color: #218838;
     }
   </style>
 </head>
 <body>
 
-  <h1>Aluguel de Imóveis</h1>
-  <button id="botaoAbrir">Fazer Cadastro</button>
+  <h1>Teste: Formulário Simples</h1>
+  <button id="mostrarForm">Mostrar Formulário</button>
 
   <form id="formCadastro">
     <input name="nome" placeholder="Nome completo" required>
-    <input name="cpf" placeholder
+    <button type="submit">Enviar</button>
+  </form>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const botao = document.getElementById('mostrarForm');
+      const form = document.getElementById('formCadastro');
+
+      botao.addEventListener('click', () => {
+        form.style.display = 'flex';
+      });
+    });
+  </script>
+
+</body>
+</html>
