@@ -28,10 +28,10 @@ app.post('/cadastrarCliente', async (req, res) => {
     const drive = google.drive({ version: 'v3', auth: authClient });
     const docs = google.docs({ version: 'v1', auth: authClient });
 
-    // ID da pasta raiz (a que você compartilhou com a conta de serviço)
+    // ID da pasta principal no Drive
     const pastaPaiId = '10CrMf4CNrZe4oXZE_LdP7amdOXDfnWtE';
 
-    // Criar subpasta para o cliente dentro da pasta principal
+    // Criar subpasta para o cliente
     const pasta = await drive.files.create({
       resource: {
         name: `Cliente - ${nome}`,
@@ -52,7 +52,7 @@ app.post('/cadastrarCliente', async (req, res) => {
 
     const docId = doc.data.documentId;
 
-    // Inserir conteúdo no documento
+    // Escrever os dados dentro do documento
     await docs.documents.batchUpdate({
       documentId: docId,
       requestBody: {
