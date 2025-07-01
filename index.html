@@ -1,86 +1,56 @@
-const express = require('express');
-const { google } = require('googleapis');
-const cors = require('cors');
-
-const app = express();
-app.use(cors());
-app.use(express.json());
-
-const PORT = process.env.PORT || 8080;
-
-// Autenticação com Google
-const auth = new google.auth.GoogleAuth({
-  scopes: [
-    'https://www.googleapis.com/auth/drive',
-    'https://www.googleapis.com/auth/documents'
-  ]
-});
-
-app.post('/cadastrarCliente', async (req, res) => {
-  try {
-    const { nome, cpf, rg, email, telefone, imovel } = req.body;
-
-    if (!nome || !cpf || !rg || !email || !telefone) {
-      return res.status(400).json({ error: 'Todos os campos obrigatórios devem ser preenchidos.' });
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Cadastro de Cliente - Imobiliária</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 40px;
+      background-color: #f8f8f8;
     }
 
-    const authClient = await auth.getClient();
-    const drive = google.drive({ version: 'v3', auth: authClient });
-    const docs = google.docs({ version: 'v1', auth: authClient });
+    h1 {
+      color: #333;
+    }
 
-    // ID da pasta principal no Drive
-    const pastaPaiId = '10CrMf4CNrZe4oXZE_LdP7amdOXDfnWtE';
+    form {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      width: 300px;
+      margin: auto;
+      padding: 20px;
+      background-color: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
 
-    // Criar subpasta para o cliente
-    const pasta = await drive.files.create({
-      resource: {
-        name: `Cliente - ${nome}`,
-        mimeType: 'application/vnd.google-apps.folder',
-        parents: [pastaPaiId]
-      },
-      fields: 'id'
-    });
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
 
-    const pastaId = pasta.data.id;
+    button {
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+      border: none;
+    }
 
-    // Criar documento Google Docs
-    const doc = await docs.documents.create({
-      requestBody: {
-        title: `Cadastro - ${nome}`
-      }
-    });
+    button:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
 
-    const docId = doc.data.documentId;
+  <h1>Aluguel de Imóveis</h1>
+  <p>
+    <button onclick="abrirFormulario()">Fazer Cadastro</button>
+  </p>
 
-    // Escrever os dados dentro do documento
-    await docs.documents.batchUpdate({
-      documentId: docId,
-      requestBody: {
-        requests: [{
-          insertText: {
-            location: { index: 1 },
-            text: `Cadastro de Cliente\n\nNome: ${nome}\nCPF: ${cpf}\nRG: ${rg}\nE-mail: ${email}\nTelefone: ${telefone}\nImóvel Desejado: ${imovel || 'Não informado'}`
-          }
-        }]
-      }
-    });
-
-    // Mover o documento para a subpasta do cliente
-    await drive.files.update({
-      fileId: docId,
-      addParents: pastaId,
-      removeParents: '',
-      fields: 'id, parents'
-    });
-
-    res.status(200).json({ message: 'Cliente cadastrado com sucesso!' });
-
-  } catch (error) {
-    console.error('Erro ao cadastrar cliente:', error);
-    res.status(500).json({ error: 'Erro interno ao cadastrar cliente.' });
-  }
-});
-
-app.listen(PORT, () => {
-  console.log(`API rodando na porta ${PORT}`);
-});
+  <form id="formCadastro" onsubmit="
