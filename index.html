@@ -1,81 +1,86 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <title>Cadastro de Cliente - Aluguel de Imóvel</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 50px;
-    }
-    form {
-      display: none;
-      flex-direction: column;
-      gap: 10px;
-      width: 300px;
-      margin: auto;
-      padding: 20px;
-      border: 1px solid #ccc;
-      border-radius: 10px;
-    }
-    input, button {
-      padding: 10px;
-      font-size: 16px;
-    }
-    button {
-      cursor: pointer;
-    }
-  </style>
-</head>
-<body>
+const express = require('express');
+const { google } = require('googleapis');
+const cors = require('cors');
 
-  <h1>Aluguel de Imóveis</h1>
-  <p>
-    <button onclick="abrirFormulario()">Fazer Cadastro</button>
-  </p>
+const app = express();
+app.use(cors());
+app.use(express.json());
 
-  <form id="formCadastro" onsubmit="enviarCadastro(event)">
-  <input name="nome" placeholder="Nome completo" required>
-  <input name="cpf" placeholder="CPF" required>
-  <input name="rg" placeholder="RG" required>
-  <input name="email" type="email" placeholder="E-mail" required>
-  <input name="telefone" placeholder="Telefone" required>
-  <input name="imovel" placeholder="Imóvel desejado">
-  <button type="submit">Enviar</button>
-</form>
+const PORT = process.env.PORT || 8080;
 
-  <script>
-    function abrirFormulario() {
-      document.getElementById('formCadastro').style.display = 'flex';
+// Autenticação com Google
+const auth = new google.auth.GoogleAuth({
+  scopes: [
+    'https://www.googleapis.com/auth/drive',
+    'https://www.googleapis.com/auth/documents'
+  ]
+});
+
+app.post('/cadastrarCliente', async (req, res) => {
+  try {
+    const { nome, cpf, rg, email, telefone, imovel } = req.body;
+
+    if (!nome || !cpf || !rg || !email || !telefone) {
+      return res.status(400).json({ error: 'Todos os campos obrigatórios devem ser preenchidos.' });
     }
 
-    async function enviarCadastro(event) {
-      event.preventDefault();
+    const authClient = await auth.getClient();
+    const drive = google.drive({ version: 'v3', auth: authClient });
+    const docs = google.docs({ version: 'v1', auth: authClient });
 
-      const form = new FormData(event.target);
-      const dados = Object.fromEntries(form.entries());
+    // ID da pasta raiz (a que você compartilhou com a conta de serviço)
+    const pastaPaiId = '10CrMf4CNrZe4oXZE_LdP7amdOXDfnWtE';
 
-      try {
-        const response = await fetch("https://cadastro-api-clientes-483779767817.southamerica-east1.run.app/cadastrarCliente", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(dados)
-        });
+    // Criar subpasta para o cliente dentro da pasta principal
+    const pasta = await drive.files.create({
+      resource: {
+        name: `Cliente - ${nome}`,
+        mimeType: 'application/vnd.google-apps.folder',
+        parents: [pastaPaiId]
+      },
+      fields: 'id'
+    });
 
-        const result = await response.json();
-        alert(result.message || "Cadastro enviado com sucesso!");
+    const pastaId = pasta.data.id;
 
-        event.target.reset();
-        document.getElementById('formCadastro').style.display = 'none';
-      } catch (error) {
-        console.error("Erro ao enviar cadastro:", error);
-        alert("Erro ao enviar cadastro. Tente novamente.");
+    // Criar documento Google Docs
+    const doc = await docs.documents.create({
+      requestBody: {
+        title: `Cadastro - ${nome}`
       }
-    }
-  </script>
+    });
 
-</body>
-</html>
+    const docId = doc.data.documentId;
+
+    // Inserir conteúdo no documento
+    await docs.documents.batchUpdate({
+      documentId: docId,
+      requestBody: {
+        requests: [{
+          insertText: {
+            location: { index: 1 },
+            text: `Cadastro de Cliente\n\nNome: ${nome}\nCPF: ${cpf}\nRG: ${rg}\nE-mail: ${email}\nTelefone: ${telefone}\nImóvel Desejado: ${imovel || 'Não informado'}`
+          }
+        }]
+      }
+    });
+
+    // Mover o documento para a subpasta do cliente
+    await drive.files.update({
+      fileId: docId,
+      addParents: pastaId,
+      removeParents: '',
+      fields: 'id, parents'
+    });
+
+    res.status(200).json({ message: 'Cliente cadastrado com sucesso!' });
+
+  } catch (error) {
+    console.error('Erro ao cadastrar cliente:', error);
+    res.status(500).json({ error: 'Erro interno ao cadastrar cliente.' });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`API rodando na porta ${PORT}`);
+});
