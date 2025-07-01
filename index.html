@@ -57,7 +57,7 @@
       const dados = Object.fromEntries(form.entries());
 
       try {
-        const response = await fetch("https://SEU_ENDPOINT_CLOUD_RUN/cadastrarCliente", {
+        const response = await fetch("https://cadastro-api-clientes-483779767817.southamerica-east1.run.app/cadastrarCliente", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
